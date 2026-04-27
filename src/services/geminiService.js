@@ -17,8 +17,12 @@ export const processIncident = async (incidentData) => {
   try {
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    const jsonText = response.text().replace(/```json/g, '').replace(/```/g, '').trim();
-    return JSON.parse(jsonText);
+    let text = response.text();
+    const match = text.match(/\{[\s\S]*\}/);
+    if (match) {
+      text = match[0];
+    }
+    return JSON.parse(text);
   } catch (error) {
     console.error("Gemini processing error:", error);
     throw error;
@@ -46,8 +50,12 @@ export const detectDuplicates = async (newIncident, existingIncidents) => {
   try {
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    const jsonText = response.text().replace(/```json/g, '').replace(/```/g, '').trim();
-    return JSON.parse(jsonText);
+    let text = response.text();
+    const match = text.match(/\[[\s\S]*\]/);
+    if (match) {
+      text = match[0];
+    }
+    return JSON.parse(text);
   } catch (error) {
     console.error("Gemini duplicate detection error:", error);
     return [];

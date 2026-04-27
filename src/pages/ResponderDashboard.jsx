@@ -8,15 +8,31 @@ import { updateIncident } from '../services/firestoreService';
 import { Shield, Activity, List, LayoutGrid, AlertCircle, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+import { useLocation } from 'react-router-dom';
+
 const ResponderDashboard = () => {
   const { incidents, loading } = useIncidents();
   const [selectedIncident, setSelectedIncident] = useState(null);
   const [viewMode, setViewMode] = useState('split');
   const mapRef = useRef(null);
+  const location = useLocation();
 
   const activeIncidents = incidents.filter(i => i.status !== 'resolved' && i.status !== 'merged');
   const criticalCount = activeIncidents.filter(i => i.severity === 'critical').length;
   const resolvedCount = incidents.filter(i => i.status === 'resolved').length;
+
+  // Handle auto-focus from redirect
+  React.useEffect(() => {
+    if (!loading && activeIncidents.length > 0 && location.state?.selectedIncidentId) {
+      const target = activeIncidents.find(inc => inc.id === location.state.selectedIncidentId);
+      if (target) {
+        // Delay to allow map tiles to render before flying to location
+        setTimeout(() => {
+          handleIncidentClick(target);
+        }, 1000);
+      }
+    }
+  }, [loading, location.state]); // Only run when loading finishes or state changes
 
   // Called when any incident is clicked (from list OR map marker)
   const handleIncidentClick = (incident) => {

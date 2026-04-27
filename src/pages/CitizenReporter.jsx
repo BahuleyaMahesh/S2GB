@@ -4,8 +4,11 @@ import { useIncidents } from '../hooks/useIncidents';
 import { Shield, Activity, Map as MapIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+import { useNavigate } from 'react-router-dom';
+
 const CitizenReporter = () => {
   const { incidents } = useIncidents();
+  const navigate = useNavigate();
   const recentIncidents = incidents.slice(0, 5);
 
   return (
@@ -47,12 +50,21 @@ const CitizenReporter = () => {
               <h3 className="text-sm font-bold uppercase tracking-widest text-gray-500 flex items-center gap-2">
                 <Activity size={16} /> Recent Activity
               </h3>
-              <span className="text-[10px] text-blue-500 font-bold cursor-pointer hover:underline">View Map</span>
+              <span 
+                onClick={() => navigate('/responder')}
+                className="text-[10px] text-blue-500 font-bold cursor-pointer hover:underline"
+              >
+                View Map
+              </span>
             </div>
             
             <div className="space-y-4">
               {recentIncidents.map((inc) => (
-                <div key={inc.id} className="flex gap-4 p-3 rounded-xl hover:bg-white/5 transition-all border border-transparent hover:border-white/5">
+                <div 
+                  key={inc.id} 
+                  onClick={() => navigate('/responder', { state: { selectedIncidentId: inc.id } })}
+                  className="flex gap-4 p-3 rounded-xl hover:bg-white/5 transition-all border border-transparent hover:border-white/5 cursor-pointer"
+                >
                   <div className="w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center shrink-0">
                     <span className="text-lg">
                       {inc.incidentType === 'fire' ? '🔥' : inc.incidentType === 'medical' ? '🚑' : '⚠️'}
@@ -96,7 +108,7 @@ const CitizenReporter = () => {
           <div className="flex gap-8">
             <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
             <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
-            <a href="#" className="hover:text-white transition-colors">Responder Login</a>
+            <a onClick={() => navigate('/responder')} className="hover:text-white transition-colors cursor-pointer">Responder Login</a>
           </div>
         </div>
       </footer>

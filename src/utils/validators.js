@@ -9,7 +9,7 @@ export const validateIncidentForm = (formData) => {
     errors.incidentType = "Please select an incident type.";
   }
   
-  if (!formData.location || !formData.location.latitude) {
+  if (!formData.location || !formData.location.address || formData.location.address.trim() === '') {
     errors.location = "Please provide a valid location.";
   }
   

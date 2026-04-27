@@ -29,39 +29,127 @@ const IncidentForm = ({ onSuccess }) => {
     setErrors({});
     
     try {
-      // 1. Process with Gemini
-      const structuredData = await processIncident(formData);
+      // Geocode location using OpenStreetMap Nominatim (Free)
+      let lat = 28.6139; // Default fallback (New Delhi)
+      let lon = 77.2090;
+      try {
+        if (formData.location.address) {
+          const query = encodeURIComponent(formData.location.address);
+          const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=1`);
+          const geoData = await geoRes.json();
+          if (geoData && geoData.length > 0) {
+            lat = parseFloat(geoData[0].lat);
+            lon = parseFloat(geoData[0].lon);
+          } else {
+            console.warn("Could not find coordinates for address, using fallback.");
+          }
+        }
+      } catch (geoErr) {
+        console.warn("Geocoding API failed, using fallback.", geoErr);
+      }
+
+      const completeLocation = {
+        address: formData.location.address,
+        latitude: lat,
+        longitude: lon
+      };
       
-      // 2. Detect Duplicates
-      const recent = await getIncidents({ limit: 50 });
-      const dupes = await detectDuplicates({ ...structuredData, description: formData.description }, recent);
+      const finalFormData = { ...formData, location: completeLocation };
+
+      // 1. Process with Gemini (with fallback)
+      let structuredData;
+      try {
+        structuredData = await processIncident(finalFormData);
+      } catch (geminiError) {
+        console.warn("Gemini processing failed, using fallback structured data.", geminiError);
+        structuredData = {
+          title: finalFormData.incidentType ? finalFormData.incidentType.toUpperCase() + " Incident" : "Unclassified Incident",
+          priority: finalFormData.incidentType === 'fire' || finalFormData.incidentType === 'hazmat' ? 9 : 5,
+          requiredServices: ["General Response Team"]
+        };
+      }
+      
+      // 2. Detect Duplicates (with fallback)
+      let dupes = [];
+      try {
+        const recent = await getIncidents({ limit: 50 });
+        if (recent.length > 0) {
+          dupes = await detectDuplicates({ ...structuredData, description: finalFormData.description }, recent);
+        }
+      } catch (geminiError) {
+        console.warn("Gemini duplicate detection failed, skipping.", geminiError);
+      }
       
       // 3. Save to Firestore
       const incidentId = await addIncident({
-        ...formData,
+        ...finalFormData,
         structuredData,
         severity: structuredData.priority > 8 ? 'critical' : structuredData.priority > 6 ? 'high' : 'medium',
-        duplicateScore: dupes[0]?.similarity || 0,
-        duplicateOf: dupes[0]?.similarity > 70 ? dupes[0].incidentId : null
+        duplicateScore: dupes && dupes.length > 0 ? dupes[0]?.similarity || 0 : 0,
+        duplicateOf: dupes && dupes[0]?.similarity > 70 ? dupes[0].incidentId : null
       });
 
       setStatus({ type: 'success', message: `Incident #${incidentId.slice(-5)} reported successfully.` });
       setFormData({ description: '', incidentType: '', location: { address: '', latitude: null, longitude: null }, userConsent: false });
       if (onSuccess) onSuccess(incidentId);
     } catch (error) {
-      setStatus({ type: 'error', message: "Failed to process emergency report. Please try again." });
+      console.error("Form submission error:", error);
+      setStatus({ type: 'error', message: `Failed: ${error.message || 'Unknown error'}` });
     } finally {
       setLoading(false);
     }
   };
 
   const handleVoiceInput = () => {
-    // Simulated Voice-to-Text
-    setIsRecording(true);
-    setTimeout(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Speech recognition is not supported in this browser. Please use Chrome or Safari.");
+      return;
+    }
+
+    if (isRecording) {
+      return; // Already recording
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    recognition.onstart = () => {
+      setIsRecording(true);
+    };
+
+    recognition.onresult = (event) => {
+      let finalTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript;
+        }
+      }
+      if (finalTranscript) {
+        setFormData(prev => ({ 
+          ...prev, 
+          description: prev.description + (prev.description ? ' ' : '') + finalTranscript 
+        }));
+      }
+    };
+
+    recognition.onerror = (event) => {
+      console.error("Speech recognition error:", event.error);
       setIsRecording(false);
-      setFormData(prev => ({ ...prev, description: prev.description + " [Voice Input]: Fire in the kitchen on the 3rd floor. People are escaping." }));
-    }, 2000);
+    };
+
+    recognition.onend = () => {
+      setIsRecording(false);
+    };
+
+    try {
+      recognition.start();
+    } catch (error) {
+      console.error("Could not start speech recognition:", error);
+      setIsRecording(false);
+    }
   };
 
   return (
@@ -126,7 +214,7 @@ const IncidentForm = ({ onSuccess }) => {
               value={formData.location.address}
               onChange={(e) => setFormData({ 
                 ...formData, 
-                location: { address: e.target.value, latitude: 37.7749, longitude: -122.4194 } // Simulating coordinates
+                location: { ...formData.location, address: e.target.value } 
               })}
             />
             {errors.location && <p className="text-red-500 text-xs mt-1">{errors.location}</p>}
