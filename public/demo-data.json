@@ -1,0 +1,14 @@
+[
+  {
+    "title": "Industrial Warehouse Fire",
+    "description": "Large fire reported in the industrial district. Multiple fire units on scene.",
+    "type": "fire",
+    "severity": "critical"
+  },
+  {
+    "title": "Multi-Vehicle Collision",
+    "description": "Five cars involved in a pileup on the main bridge. Emergency services en route.",
+    "type": "accident",
+    "severity": "high"
+  }
+]
