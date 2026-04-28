@@ -10,8 +10,10 @@ const IncidentForm = ({ onSuccess }) => {
     description: '',
     incidentType: '',
     location: { address: '', latitude: null, longitude: null },
-    userConsent: false
+    userConsent: false,
+    image: null
   });
+  const fileInputRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [status, setStatus] = useState(null);
@@ -90,7 +92,8 @@ const IncidentForm = ({ onSuccess }) => {
       });
 
       setStatus({ type: 'success', message: `Incident #${incidentId.slice(-5)} reported successfully.` });
-      setFormData({ description: '', incidentType: '', location: { address: '', latitude: null, longitude: null }, userConsent: false });
+      setFormData({ description: '', incidentType: '', location: { address: '', latitude: null, longitude: null }, userConsent: false, image: null });
+      if (fileInputRef.current) fileInputRef.current.value = '';
       if (onSuccess) onSuccess(incidentId);
     } catch (error) {
       console.error("Form submission error:", error);
@@ -152,6 +155,17 @@ const IncidentForm = ({ onSuccess }) => {
     }
   };
 
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({ ...prev, image: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   return (
     <div className="bg-gray-900/50 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl">
       <div className="flex items-center gap-3 mb-6">
@@ -180,11 +194,34 @@ const IncidentForm = ({ onSuccess }) => {
               >
                 <Mic size={18} className="text-white" />
               </button>
-              <button type="button" className="p-2 rounded-full bg-gray-800 hover:bg-gray-700">
+              <input 
+                type="file" 
+                accept="image/*" 
+                className="hidden" 
+                ref={fileInputRef} 
+                onChange={handleImageUpload} 
+              />
+              <button 
+                type="button" 
+                onClick={() => fileInputRef.current?.click()}
+                className={`p-2 rounded-full transition-all ${formData.image ? 'bg-blue-600' : 'bg-gray-800 hover:bg-gray-700'}`}
+              >
                 <ImageIcon size={18} className="text-white" />
               </button>
             </div>
           </div>
+          {formData.image && (
+            <div className="mt-3 relative inline-block">
+              <img src={formData.image} alt="Upload preview" className="h-16 w-16 object-cover rounded-lg border border-white/20" />
+              <button 
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, image: null }))}
+                className="absolute -top-2 -right-2 bg-red-500 rounded-full h-5 w-5 flex items-center justify-center text-[10px] font-bold shadow-lg"
+              >
+                ✕
+              </button>
+            </div>
+          )}
           {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description}</p>}
         </div>
 
