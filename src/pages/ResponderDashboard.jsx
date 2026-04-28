@@ -80,9 +80,9 @@ const ResponderDashboard = () => {
           <div className="h-6 w-px bg-white/10" />
 
           <div className="flex bg-black/40 p-1 rounded-lg border border-white/5 gap-0.5">
-            <ViewBtn active={viewMode === 'map'}   onClick={() => setViewMode('map')}   icon={<LayoutGrid size={15} />} />
+            <ViewBtn active={viewMode === 'map'} onClick={() => setViewMode('map')} icon={<LayoutGrid size={15} />} />
             <ViewBtn active={viewMode === 'split'} onClick={() => setViewMode('split')} icon={<Activity size={15} />} />
-            <ViewBtn active={viewMode === 'list'}  onClick={() => setViewMode('list')}  icon={<List size={15} />} />
+            <ViewBtn active={viewMode === 'list'} onClick={() => setViewMode('list')} icon={<List size={15} />} />
           </div>
         </div>
       </header>
@@ -90,10 +90,9 @@ const ResponderDashboard = () => {
       {/* Main Content */}
       <main className="flex-1 overflow-hidden flex">
         {/* Map Panel */}
-        <div className={`transition-all duration-500 h-full p-3 ${
-          viewMode === 'list' ? 'w-0 p-0 overflow-hidden' :
-          viewMode === 'map'  ? 'w-full' : 'w-2/3'
-        }`}>
+        <div className={`transition-all duration-500 h-full p-3 ${viewMode === 'list' ? 'w-0 p-0 overflow-hidden' :
+          viewMode === 'map' ? 'w-full' : 'w-2/3'
+          }`}>
           <IncidentMap
             ref={mapRef}
             incidents={activeIncidents}
@@ -102,10 +101,9 @@ const ResponderDashboard = () => {
         </div>
 
         {/* List Panel */}
-        <div className={`transition-all duration-500 h-full border-l border-white/5 bg-black/10 flex flex-col ${
-          viewMode === 'map'  ? 'w-0 overflow-hidden' :
+        <div className={`transition-all duration-500 h-full border-l border-white/5 bg-black/10 flex flex-col ${viewMode === 'map' ? 'w-0 overflow-hidden' :
           viewMode === 'list' ? 'w-full' : 'w-1/3'
-        }`}>
+          }`}>
           <div className="p-4 border-b border-white/5 shrink-0">
             <h2 className="font-bold text-sm">Incident Feed</h2>
             <p className="text-[10px] text-gray-500 mt-0.5">Click any incident to zoom map & view details</p>
@@ -122,7 +120,7 @@ const ResponderDashboard = () => {
       {/* Incident Detail Modal */}
       <AnimatePresence>
         {selectedIncident && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-1100 flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
             <IncidentDetail
               incident={selectedIncident}
               onClose={() => setSelectedIncident(null)}
